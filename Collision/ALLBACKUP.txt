@@ -1,0 +1,1141 @@
+var balls = [];
+var active;
+var unActive;
+var mouseX;
+var mouseY;
+var home = true;
+var origin;
+var ballRadius = 15;
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector (canvas.width/2, canvas.height-ballRadius);
+    homeScreen();
+}
+
+function draw () {
+    if (home){
+        homeScreen();
+    }
+}
+
+function homeScreen(){
+    ctx.drawImage(active, 0, 0);
+    setInterval(homeScreen, 10);
+}
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        balls.push(new Ball(mouseX, mouseY, 0, 0, 10, 20, true));
+    }
+    if (keyPressed == 70) {
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+}
+
+function keyUpHandler(e) {
+
+}
+
+function mouseDown(){
+    if (home){
+        
+    }
+}
+
+function mouseUp(){
+    
+}
+
+
+function itterateBalls(){
+    for(var b of balls){
+        if (!b.frozen){
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePositon();
+        }
+    }
+}
+
+function mouseHandler(e) {
+    mouseX = e.clientX - canvas.offsetLeft;
+    mouseY = e.clientY - canvas.offsetTop;
+}
+
+VECTOR
+function Vector(x, y, polar) {
+
+    if (polar) { //given mag (x) and direction (y)...
+        this.x = x * Math.cos(y);
+        this.y = x * Math.sin(y);
+    } else { 
+        this.x = x; 
+        this.y = y;
+    }
+}
+
+Vector.prototype.getMag = function () {
+    return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+}
+
+Vector.prototype.distance = function (v) {
+    return Math.sqrt(
+        (Math.pow(this.x - v.x, 2)) +
+        (Math.pow(this.y - v.y, 2))
+    );
+}
+
+Vector.prototype.multiply = function (k) {
+    return new Vector(this.x * k, this.y * k);
+}
+
+Vector.prototype.multVectors = function (v) {
+    return (this.x * v.x) + (this.y * v.y);
+}
+
+Vector.prototype.subtract = function (v) {
+    return new Vector(this.x - v.x, this.y - v.y);
+}
+
+Vector.prototype.project = function (v) {
+    var tangent = v.multiply((v.multVectors(this)) / Math.pow(v.getMag(), 2));
+    var inLine = new Vector(v.y, -v.x);
+    inLine = inLine.multiply(Math.abs((v.x * this.y) - (v.y * this.x)) / Math.pow(v.getMag(), 2));
+    if (inLine.multVectors(this) < 0) {
+        return [tangent, inLine.multiply(-1)];
+    } else {
+        return [tangent, inLine];
+    }
+}
+
+
+
+Vector.prototype.add = function (v) {
+    return new Vector(this.x + v.x, this.y + v.y);
+}
+
+BALLS
+
+function Ball(xPos, yPos, xVel, yVel, mass, radius, show) {
+    this.pos = new Vector(xPos, yPos);
+    this.vel = new Vector(xVel, yVel);
+    this.mass = mass;
+    this.show = show;
+    this.acc = new Vector(0, 0);
+    this.radius = radius;
+    this.frozen = false; 
+    this.collided = false;
+}
+
+Ball.prototype.draw = function () {
+    //this.showVectors();
+    ctx.beginPath();
+    ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+    ctx.closePath();
+}
+
+Ball.prototype.resetCollision = function () {
+    if (this.collided) {
+        this.vel = this.newVel;
+        //this.updatePosition();
+        this.collided = false;
+        delete this.newTangent;
+        delete this.newVel;
+        delete this.inLine;
+        delete this.tangent;
+        delete this.bTangent;
+    }
+}
+
+Ball.prototype.hitWall = function () {
+    if (this.pos.x > canvas.width - this.radius) { //hit right wall
+        this.vel.x *= -1;
+    }
+    if (this.pos.x < this.radius) { //hit left wall
+        this.vel.x *= -1;
+    }
+    if (this.pos.y < this.radius) { //hit top wall
+        this.vel.y *= -1;
+    }
+    if (this.pos.y > canvas.height - this.radius) { //hit bottom wall
+        this.vel.y *= -1;
+    }
+}
+
+Ball.prototype.applyGravity = function (b) { //returns a force vector 
+    var distance = this.pos.distance(b.pos);
+    var gForce = new Vector(0, 0);
+    if (distance > this.radius + b.radius + 10) {
+        var gForceMag = (G * this.mass * b.mass) / Math.pow(distance, 2) || 0; //Newton's 
+        //law of universal gravitation F=(G*M*m)/r^2
+        gForce = this.pos.subtract(b.pos); //vector difference between the two balls
+        gForce = gForce.multiply(gForceMag / gForce.getMag() /*distance*/ ); //scales gforce 
+        //vector to correct magnitude based on gForceMag
+    }
+    return gForce;
+}
+
+Ball.prototype.updateAcceleration = function (force) { //adds the forces to acc
+    this.acc = force.multiply(1 / this.mass);
+}
+
+Ball.prototype.updateVelocity = function () {
+    if (this.vel.getMag() < minVel) {
+        this.vel = this.vel.multiply(0);
+        return;
+    }
+    this.hitWall();
+    var friction = this.vel.multiply(groundFriction / this.vel.getMag());
+    this.vel = this.vel.subtract(friction);
+    this.vel = this.vel.add(this.acc);
+}
+
+Ball.prototype.updatePosition = function () {
+    this.pos = this.pos.add(this.vel.multiply(velScale));
+}
+
+Ball.prototype.calculateForce = function () { //calculates the sum of all the force 
+    //vectors 
+    var sum = new Vector(0, 0);
+    for (var i = 0; i < balls.length; i++) {
+        var b = balls[i];
+        if (b != this) {
+            sum = sum.add(this.applyGravity(b));
+        }
+    }
+    return sum;
+}
+
+Ball.prototype.calculateCollisions = function () {
+    for (var ball of balls) {
+        if (ball != this) {
+            if (this.contacting(ball)) {
+                this.collide(ball);
+            };
+        }
+    }
+}
+
+Ball.prototype.overlapping = function () {
+    for (var b of balls) {
+        if (this.contacting(b) && this != b) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Ball.prototype.contacting = function (b) {
+    return this.pos.distance(b.pos) <= (this.radius + b.radius);
+}
+
+Ball.prototype.collide = function (b) { 
+    var difVector = this.pos.subtract(b.pos);
+    var projV = this.vel.project(difVector); //returns projection of velocity vector 
+    //against the vector of the differenec of the balls' positions 
+    this.inLine = projV[1]; //projected vector inline with line of collision
+    this.tangent = projV[0]; //projected vector tangent to line of collision
+    //during a 2D elastic collision, the only component that changes is the vector 
+    //component tangent to the line of collision
+    this.bTangent = b.vel.project(difVector)[0];
+    this.newTangent = (this.tangent.multiply(this.mass - b.mass).add(this.bTangent.multiply(2 * b.mass)));
+    this.newTangent = this.newTangent.multiply(1 / (this.mass + b.mass));
+    this.newVel = this.newTangent.add(this.inLine);
+    this.collided = true;
+}
+
+Ball.prototype.freeze = function () { //freezes a ball so the acc, vel, and pos are
+    //not updated
+    this.frozen = true;
+}
+
+Ball.prototype.unFreeze = function () {
+    this.frozen = false;
+}
+
+Ball.prototype.showVectors = function () { //visual display of the ball's vectors
+    this.showVector(this.vel, '#34cf7f');
+    this.showVector(this.inLine, '#00FF00');
+    this.showVector(this.tangent, '#FF0000');
+    this.showVector(this.newVel, '#e5e100');
+    this.showVector(this.newTangent, '#e500ce');
+}
+
+Ball.prototype.showVector = function (v, colour) { //displays a specific vector
+    if (v) {
+        ctx.beginPath();
+        ctx.strokeStyle = colour;
+        ctx.moveTo(this.pos.x, this.pos.y);
+        var sv = this.pos.add(v.multiply(100)); //scaled vector 
+        ctx.lineTo(sv.x, sv.y);
+        ctx.stroke();
+    }
+}
+
+MAIN 5/29/2017 1:26
+
+var balls = [];
+var active;
+var unActive;
+var mouseX;
+var mouseY;
+var home = true;
+var origin;
+var ballRadius = 15;
+var minVel = 0.1;
+var velScale = 0.5;
+var G = 0;
+var groundFriction = 0.1;
+
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector(canvas.width / 2, canvas.height - ballRadius);
+    homeScreen();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (home) {
+        homeScreen();
+    }
+    itterateBalls();
+    requestAnimationFrame(draw);
+}
+
+function homeScreen() {
+    if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+        ctx.drawImage(active, 0, 0);
+    } else {
+        ctx.drawImage(unActive, 0, 0);
+    }
+    setInterval(homeScreen, 10);
+}
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        balls.push(new Ball(mouseX, mouseY, 0, 10, 10, 20, true));
+    }
+    if (keyPressed == 70) { //f key
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+    if (keyPressed == 82){
+        reset();
+    }
+}
+
+function keyUpHandler(e) {
+
+}
+
+function reset(){
+    balls.length = 0;
+    home = true;
+}
+
+function mouseDown() {
+    if (home) {
+        if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+            home = false;
+            draw();
+        }
+    }
+}
+
+function mouseUp() {
+
+}
+
+
+function itterateBalls() {
+    for (var b of balls) {
+        if (!b.frozen) {
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePosition();
+        }
+        b.draw();
+    }
+    collideAll();
+}
+
+function collideAll(){
+    for ()
+}
+
+function mouseHandler(e) {
+    mouseX = e.clientX - canvas.offsetLeft;
+    mouseY = e.clientY - canvas.offsetTop;
+}
+
+MAIN
+
+var balls = [];
+var active;
+var unActive;
+var mouseX;
+var mouseY;
+var home = true;
+var origin;
+var ballRadius = 15;
+var minVel = 0.1;
+var velScale = 0.5;
+var G = 0;
+var groundFriction = 0.1;
+
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector(canvas.width / 2, canvas.height - ballRadius);
+    homeScreen();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (home) {
+        homeScreen();
+    }
+    itterateBalls();
+    requestAnimationFrame(draw);
+}
+
+function homeScreen() {
+    if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+        ctx.drawImage(active, 0, 0);
+    } else {
+        ctx.drawImage(unActive, 0, 0);
+    }
+    setInterval(homeScreen, 10);
+}
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        balls.push(new Ball(mouseX, mouseY, 0, 10, 10, 20, true));
+    }
+    if (keyPressed == 70) { //f key
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+    if (keyPressed == 82){
+        reset();
+    }
+}
+
+function keyUpHandler(e) {
+
+}
+
+function reset(){
+    balls.length = 0;
+    home = true;
+}
+
+function mouseDown() {
+    if (home) {
+        if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+            home = false;
+            draw();
+        }
+    }
+}
+
+function mouseUp() {
+
+}
+
+
+function itterateBalls() {
+    for (var b of balls) {
+        if (!b.frozen) {
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePosition();
+        }
+        b.draw();
+    }  
+    collideAll();
+}
+
+function collideAll(){
+    for (var b of balls){
+        b.checkCollisions();
+    }
+    for (var b of balls){
+        b.resetCollision();
+    }
+}
+
+function mouseHandler(e) {
+    mouseX = e.clientX - canvas.offsetLeft;
+    mouseY = e.clientY - canvas.offsetTop;
+}
+
+MAIN
+
+var balls = [];
+var active;
+var unActive;
+var mouseX;
+var mouseY;
+var home = true;
+var origin;
+var ballRadius = 15;
+var ballMass = 10;
+var minVel = 0.1;
+var velScale = 0.5;
+var G = 0;
+var groundFriction = 0.1;
+var mousePressed = false;
+var launchScaler = 10;
+var score = 0;
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector(canvas.width / 2, canvas.height - ballRadius);
+    homeScreen();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (home) {
+        homeScreen();
+    }
+    itterateBalls();
+    if (allStill()) {
+        if (mousePressed) {
+            drawMouseVector();
+        }
+        showTempBall();
+    }
+    showScore();
+    requestAnimationFrame(draw);
+}
+
+function homeScreen() {
+    if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+        ctx.drawImage(active, 0, 0);
+    } else {
+        ctx.drawImage(unActive, 0, 0);
+    }
+    setInterval(homeScreen, 10);
+}
+
+
+function showTempBall() {
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, ballRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function showScore(){
+    ctx.beginPath();
+    ctx.font = "20px Arial";
+    ctx.fillText("SCORE:"+score, 10, origin.y);
+    ctx.closePath();
+}
+
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        balls.push(new Ball(mouseX, mouseY, 0, 10, 10, 20, true));
+    }
+    if (keyPressed == 70) { //f key
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+    if (keyPressed == 82) {
+        reset();
+    }
+}
+
+function keyUpHandler(e) {
+
+}
+
+function reset() {
+    balls.length = 0;
+    home = true;
+}
+
+function mouseDown() {
+    console.log('salad');
+    if (home) {
+        if (mouseX > 100 && mouseX < 300 && mouseY < 450 && mouseY > 340) {
+            home = false;
+            draw();
+        }
+    } else {
+        mousePressed = true;
+    }
+}
+
+function launchBall(x, y) {
+    var mPos = new Vector(x, y);
+    mPos = mPos.subtract(origin);
+    var newVel = mPos.multiply(1 / launchScaler);
+    balls.push(new Ball(origin.x, origin.y, newVel.x, newVel.y, ballMass, ballRadius, true));
+}
+
+function mouseUp() {
+    mousePressed = false;
+    if (allStill()) {
+        launchBall(mouseX, mouseY);
+    }
+}
+
+function drawMouseVector() {
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(mouseX, mouseY);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function itterateBalls() {
+    for (var b of balls) {
+        if (!b.frozen) {
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePosition();
+        }
+        b.draw();
+    }
+    collideAll();
+}
+
+function collideAll() {
+    for (var b of balls) {
+        b.checkCollisions();
+    }
+    for (var b of balls) {
+        b.resetCollision();
+    }
+}
+
+function allStill() {
+    var still = true;
+    for (var b of balls) {
+        if (b.vel.getMag() > minVel) {
+            return false;
+        }
+    }
+    return still;
+}
+
+function mouseHandler(e) {
+    mouseX = e.clientX - canvas.offsetLeft;
+    mouseY = e.clientY - canvas.offsetTop;
+}
+
+MAIN
+
+/*
+TODO
+count how many balls it takes to beat the level
+*/
+
+var balls = [];
+var active;
+var unActive;
+var mousePos = new Vector(0, 0);
+var home = true;
+var origin;
+var ballRadius = 20;
+var ballMass = 10;
+var minVel = 0.1;
+var velScale = 0.5;
+var G = 0;
+var groundFriction = 0.07;
+var mousePressed = false;
+var launchScaler = 10;
+var score = 0;
+var mousePos2 = new Vector(0, 0);
+var maxLaunchSpeed = 300;
+var delayLaunch = false;
+var showVectors = false;
+var obstacleMass = 100;
+var obstaceRadius = 20;
+var numObstacles = 10;
+var obstacles = [
+    new Vector(50, 100),
+    new Vector(150, 100), 
+    new Vector(250, 100),
+    new Vector(350, 100),
+    new Vector(50, 200),
+    new Vector(150, 200),
+    new Vector(250, 200),
+    new Vector(350, 200)
+    ];
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector(canvas.width / 2, canvas.height - ballRadius);
+    homeScreen();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (home) {
+        homeScreen();
+    }
+    itterateBalls();
+    if (allStill() && !delayLaunch) {
+        if (mousePressed && mousePos.isOnScreen()) {
+            drawMouseVector();
+        }
+    }
+    showScore();
+    if (allStill()) {
+        showTempBall();
+    }
+    requestAnimationFrame(draw);
+}
+
+function homeScreen() {
+    if (mousePos.x > 100 && mousePos.x < 300 && mousePos.y < 450 && mousePos.y > 340) {
+        ctx.drawImage(active, 0, 0);
+    } else {
+        ctx.drawImage(unActive, 0, 0);
+    }
+    setInterval(homeScreen, 10);
+}
+
+function initObstacles() {
+    for (var o of obstacles) {
+        balls.push(new Ball(o.x, o.y, 0, 0, obstacleMass, obstaceRadius, true));
+    }
+}
+
+
+function showTempBall() {
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, ballRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function showScore() {
+    ctx.beginPath();
+    ctx.font = "20px Arial";
+    ctx.fillText("SCORE:" + score, 10, origin.y + 10);
+    ctx.closePath();
+}
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        balls.push(new Ball(mousePos.x, mousePos.y, 0, 10, 10, 20, true));
+    }
+    if (keyPressed == 70) { //f key
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+    if (keyPressed == 82) {
+        reset();
+    }
+}
+
+function keyUpHandler(e) {
+
+}
+
+function reset() {
+    balls.length = 0;
+    score = 0;
+    home = true;
+}
+
+function mouseDown() {
+    if (home) {
+        if (mousePos.x > 100 && mousePos.x < 300 && mousePos.y < 450 && mousePos.y > 340) {
+            home = false;
+            delayLaunch = true;
+            initObstacles();
+            draw();
+        }
+    } else {
+        mousePressed = true;
+        delayLaunch = false;
+    }
+}
+
+function launchBall(x, y) {
+    var mPos = new Vector(x, y);
+    mPos = mPos.subtract(origin);
+    var newVel = mPos.multiply(1 / launchScaler);
+    balls.push(new Ball(origin.x, origin.y, newVel.x, newVel.y, ballMass, ballRadius, true));
+}
+
+function mouseUp() {
+    mousePressed = false;
+    if (allStill() && !delayLaunch && mousePos.isOnScreen() /*&& home == false */ ) {
+        launchBall(mousePos2.x, mousePos2.y);
+    }
+}
+
+function drawMouseVector() {
+    mousePos2 = mousePos;
+    console.log(mousePos2);
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(mousePos2.x, mousePos2.y);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.closePath();
+}
+
+
+
+function itterateBalls() {
+    for (var b of balls) {
+        if (!b.frozen) {
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePosition();
+        }
+        b.draw();
+        if (showVectors) {
+            b.showVectors();
+        }
+    }
+    collideAll();
+}
+
+function collideAll() {
+    for (var b of balls) {
+        b.checkCollisions();
+    }
+    for (var b of balls) {
+        b.resetCollision();
+    }
+}
+
+function allStill() {
+    var still = true;
+    for (var b of balls) {
+        if (b.vel.getMag() > minVel) {
+            return false;
+        }
+    }
+    return still;
+}
+
+function mouseHandler(e) {
+    mousePos.x = e.clientX - canvas.offsetLeft;
+    mousePos.y = e.clientY - canvas.offsetTop;
+}
+
+MAIN
+
+/*
+ball goes in wall glitch
+temp ball shows on home page
+*/
+
+var balls = [];
+var active;
+var unActive;
+var mousePos = new Vector(0, 0);
+var home = true;
+var origin;
+var ballRadius = 15;
+var ballMass = 30;
+var minVel = 0.1;
+var velScale = 0.5;
+var G = 0;
+var groundFriction = 0.06;
+var mousePressed = false;
+var launchScaler = 15; //how much the launch vector is scaled down so that the ball does not have
+//the same velocity of the line drawn by the mosue (because that line is really long and too fast)
+var score = 0;
+var mousePos2 = new Vector(0, 0);
+var delayLaunch = false;
+var showVectors = false;
+var obstacleMass = 90;
+var obstaceRadius = 20;
+var numObstacles = 10;
+var moves = 0;
+var gameOver = false;
+
+var obstacles = [
+    new Vector(50, 100),
+    //new Vector(150, 100),
+    new Vector(200, 100),
+    new Vector(350, 100),
+    new Vector(50, 200),
+    //new Vector(150, 200),
+    new Vector(200, 200),
+    new Vector(350, 200)
+    ];
+
+function init() {
+    canvas = document.querySelectorAll("#myCanvas")[0];
+    ctx = canvas.getContext("2d");
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    document.addEventListener("mousemove", mouseHandler, false);
+    document.addEventListener("mousedown", mouseDown, false);
+    document.addEventListener("mouseup", mouseUp, false);
+    active = document.getElementById("active");
+    unActive = document.getElementById("unActive");
+    origin = new Vector(canvas.width / 2, canvas.height - ballRadius);
+    homeScreen();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (home) {
+        homeScreen();
+    }
+    itterateBalls();
+    if (allStill() && !delayLaunch) {
+        if (mousePressed /*&& mousePos.isOnScreen()*/ ) {
+            drawMouseVector();
+        }
+    }
+    showMoves();
+    if (balls.length <= 0) {
+        gameOver = true;
+        home = true;
+    }
+    if (allStill()) {
+        showTempBall();
+    }
+    requestAnimationFrame(draw);
+}
+
+function homeScreen() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (mousePos.x > 100 && mousePos.x < 300 && mousePos.y < 330 && mousePos.y > 250) { //the mouse
+        //is over the play now button
+        ctx.drawImage(active, 0, 0);
+    } else {
+        ctx.drawImage(unActive, 0, 0);
+    }
+    if (gameOver) {
+        ctx.beginPath();
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.fillText("IT ONLY TOOK YOU " + moves + " MOVES!", 40, 400);
+        ctx.fillText("PRESS 'R' TO PLAY AGAIN", 80, 430);
+        ctx.closePath();
+    }
+    setInterval(homeScreen, 10);
+}
+
+function initObstacles() {
+    for (var o of obstacles) {
+        balls.push(new Ball(o.x, o.y, 0, 0, obstacleMass, obstaceRadius, true, "#23faa4"));
+    }
+}
+
+
+function showTempBall() {
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, ballRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#df5757';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function showMoves() {
+    ctx.beginPath();
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText("MOVES: " + moves, 10, origin.y + 10);
+    ctx.closePath();
+}
+
+function keyDownHandler(e) {
+    keyPressed = e.keyCode;
+    if (keyPressed == 32) { //space bar
+        //balls.push(new Ball(mousePos.x, mousePos.y, 0, 10, 10, 20, true));
+    }
+    if (keyPressed == 70) { //f key
+        if (allFrozen) {
+            unFreezeAll();
+            allFrozen = false;
+        } else {
+            freezeAll();
+            allFrozen = true;
+        }
+    };
+    if (keyPressed == 82) { //r key (reset the game)
+        reset();
+    }
+}
+
+function keyUpHandler(e) {
+
+}
+
+function reset() {
+    balls.length = 0;
+    moves = 0;
+    home = true;
+    gameOver = false;
+}
+
+function mouseDown() {
+    if (home) {
+        if (mousePos.x > 100 && mousePos.x < 300 && mousePos.y < 330 && mousePos.y > 250) { //the 
+            //mouse is over the PLAY NOW button
+            home = false;
+            delayLaunch = true;
+            initObstacles();
+            draw();
+        }
+    } else {
+        mousePressed = true;
+        delayLaunch = false;
+    }
+}
+
+function launchBall(x, y) {
+    var mPos = new Vector(x, y);
+    mPos = mPos.subtract(origin);
+    var newVel = mPos.multiply(1 / launchScaler);
+    balls.push(new Ball(origin.x, origin.y, newVel.x, newVel.y, ballMass, ballRadius, true, "white"));
+    moves++;
+}
+
+function mouseUp() {
+    mousePressed = false;
+    if (allStill() && !delayLaunch /* && mousePos.isOnScreen() */ && !home) {
+        launchBall(mousePos2.x, mousePos2.y);
+    }
+}
+
+function drawMouseVector() {
+    mousePos2 = mousePos;
+    console.log(mousePos2);
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(mousePos2.x, mousePos2.y);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function itterateBalls() {
+    for (var b of balls) {
+        if (!b.frozen) {
+            b.updateAcceleration(b.calculateForce());
+            b.updateVelocity();
+            b.updatePosition();
+        }
+        b.draw();
+        if (showVectors) {
+            b.showVectors();
+        }
+    }
+    collideAll();
+}
+
+function collideAll() {
+    for (var b of balls) {
+        b.checkCollisions();
+    }
+    for (var b of balls) {
+        b.resetCollision();
+    }
+}
+
+function allStill() {
+    var still = true;
+    for (var b of balls) {
+        if (b.vel.getMag() > minVel) {
+            return false;
+        }
+    }
+    return still;
+}
+
+function mouseHandler(e) {
+    mousePos.x = e.clientX - canvas.offsetLeft;
+    mousePos.y = e.clientY - canvas.offsetTop;
+}
+
+
+
