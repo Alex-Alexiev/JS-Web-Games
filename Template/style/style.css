@@ -1,0 +1,28 @@
+ul {
+	overflow: hidden;
+	width: 100%;
+	margin: 0px;
+	padding: 0px;
+	border-radius: 10px;
+}	
+
+li {
+	background-color: green;
+	list-style-type: none;
+	display: block;
+	float: left;
+	width: 33.3333%;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	text-align: center;
+	color: white;
+
+}
+
+li:hover{
+	background-color: blue;
+}
+
+img {
+	float: left;
+}
