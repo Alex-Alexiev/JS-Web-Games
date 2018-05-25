@@ -1,0 +1,272 @@
+<!--
+    If for some reason you are looking at this on my github, please keep in mind that most of 
+    this was programmed at 3 am in a huge rush so it is some of the worst code I have ever written.
+    I woudl advise going back and looking at some of my other repo's =)
+-->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Q & Save</title>
+    <script src="jTerm/terminal.js"></script>
+</head>
+
+<style>
+    body {
+        background-color: black;
+    }
+</style>
+
+<body>
+    <script>
+        var hedgeCounter = 0;
+        var questions = [
+            new Question("What is Economics?", "The study of money", "A type of cheese", "The study of how scarce resources are allocated to fulfill the infinite wants of consumers", "The study of how an abundance of resoucres can be allocated to the appropriate consumers", "c"),
+            new Question("What is one of the economic problems?", "Who should get which goods and services", "Printing enough money", "Finding the resources", "Enforcing corporate laws", "a"),
+            new Question("What are the four factors of production?", "Land, Capital, Managment, Natural Resources", "Land, Labour, Capital, Enterprise", "Product, Placement, Price, Promotion", "Resource Extraction, Refinement, Conversion, Profit", "b"),
+            new Question("What is scarcity?", "Having too much supply for a product", "The amount of risk you want to make on an investment", "Not having enough demand for a product", "The excess of wants that result from having limited resources", "d"),
+            new Question("If I can watch two TV episodes instead of studying for one hour, what is the opportunity cost of studying for one hour?", "Not getting to watch TV", "Two TV episodes", "One hour of studying", "Three hours of studying", "b"),
+            new Question("As you move to the right on a production possibility curve, does the opportunity cost increase or decrease?", "Extends outwards in a 4th dimension", "Stays the same", "Increase", "Decrease", "c"),
+            new Question("What kind of change in the production possibility curve shows economic growth?", "Outward shift", "Inward shift", "Shift towards the left", "Shift towards the right", "a"),
+            new Question("What is the law of demand?", "The direct relationship between quantity demanded and quantitied supplied", "The inverse relationship between quantity demanded and quantitied supplied", "The inverse relationship between the quantity of a good demanded and the price of the good", "The direct relationship between the quantity of a good demanded and the price of the good", "c"),
+            new Question("Which of the following show two of the six determinants for demand?", "Consumer income, Prices of related goods", "Price, promotion", "price of resources, expectations", "Number of buyers, number of producers", "a"),
+            new Question("What is the difference between a normal good and an inferior good?", "As income decreases, the demand for a normal good will increase, but the demand for an inferior good will decrease ", "As income increases, the demand for a normal good will increase, but the demand for an inferior good will decrease", "As income increases, the demand for a normal good will decrease, but the demand for an inferior good will increase", "The demand for a normal good will increase over time, but the demand for an inferior good will decrease over time", "b"),
+            new Question("What is the law of supply?", "There is a direct relationship between the demand of a good and the quantity supplied", "There is an inverse relationship between the price of a good and the quantity supplied", "There is an inverse relationship between the demand of a good and the quantity supplied", "There is a direct relationship between the price of a good and the quantity supplied", "d"),
+            new Question("What are two of the five factors that affect the supply of a good?", "Taxes and sbusidies, number of producers", "technology, number of buyers", "price of resources, placement", "placement, promotion", "a"),
+            new Question("What are the four major functions of management?", "What is life?", "Organizing, funding, customer service, controlling workers", "Organizing, controlling, searching for possible candidates, planning events", "Planning, organizing, leading, and controlling", "d"),
+            new Question("What kind of leadership style leaves the employees alone to do their work?", "Autocratic", "Laissez-faire", "Leaving you alonerino", "Liberal", "b"),
+            new Question("What are the five P's of marketing?", "People, price, place, pilgrims, and product", "Marketing is just messing with our brain, so there aren't actually any P's of marketing", "Pterodactyl, public, private corportations, police friendly, and politness", "Product, price, place, promotion, and packaging", "d"),
+            new Question("What is it called when you systematically collect, analyze, and interpret information and use it to develop a marketing strategy?", "Market research", "Data collection", "Advertising", "Publicity", "a"),
+            new Question("What is the difference between demographics and psychographics?", "They are synonymous", "Demographics focus on quantitative information about a consumer, while psychographics focus on qualitative data", "Demographics focus on qualitative information about a consumer, while psychographics focus on quantitative data", "Psychographics account for small variables in human population", "b"),
+            new Question("What is commonly the second stage of the product life cycle?", "Decision point", "Growth", "Maturity", "Introduction", "b"),
+            new Question("If you have Apple advertising their iPhone 11 before it is released, is that a pull or a push marketing strategy?", "Neither", "Both push and pull", "Push", "Pull", "d"),
+            new Question("If Kellogg pays retailers extra to put their cereal at eye level, is that a push or a pull marketing strategy?", "Neither", "Both push and pull", "Push", "Pull", "c"),
+            new Question("Which of the following is not one of the three non-traditional product life cycles?", "Fads", "Niches", "Trends", "Seasonal", "c"),
+            new Question("What do you call the income that represents the total amount of money you earn before deductions?", "Gross pay", "Disgusting pay", "Net pay", "Taxes", "a"),
+            new Question("What do you call the money that goes into the bank after all the deductions from your pay check?", "Gross pay", "Disgusting pay", "Net pay", "Non-disposable income", "c"),
+            new Question("What do you call the amount of money remaining after all needs have been purchased?", "Net income", "Discretionary income", "Disposable income", "Non-disposable income", "b"),
+            new Question("When do you get taxed on your RRSP", "You get taxed on your total balance every year", "When depositing", "You don't, the government of Canada is really nice", "When you withdraw in the future", "d"),
+            new Question("If you are able to pay for a car up front in cash, should you do that, or is it better to finance it over a certain period of time?", "Buy up front", "Take a loan!", "Steal it", "Take a loan but put down a large down payment to decrease the loan period", "a"),
+            new Question("At how many employees does a small/medium business become a large business?", "50", "10000", "500", "1000", "c"),
+            new Question("What do you call a business started by someone who notices a need for a product or service, with the hopes of financial gain?", "Corportation", "Co-operative", "Sole proprietorship", "Venture", "d"),
+            new Question("What do you call a person who contributes to other people's ventures by undertaking projects of importance or difficulty?", "Entrepreneur", "Enterprising person", "Business man", "Business woman", "b"),
+            new Question("What are two of the five factors you should consider when determining the feasibility of a venture?", "Promotions, prices", "The definition of a venture is something that is not feasible", "Suppliers, licenses and permits", "Profitability, marketability", "c"),
+            new Question("These three criteria should be used to evaluate a venture.", "Cost to run, cost to advertise, cost to pay the workers", "Feasibility, marketability, profitability", "Number of investors, size of company, maximum production output", "Revenue, number of customers, who is managing", "b")
+        ];
+        var accounts = new Accounts();
+        var term = new Terminal();
+        document.body.appendChild(term.html);
+        term.print("Hello, and welcome to Q & Save! An extremely fun (ha) game that tests your BBI2O knowledge and teaches you about the differences between different ways to save money.");
+        term.input("Would you like to go over the rules before you begin?", function (userInput) {
+            userInput = userInput.toLowerCase();
+            if (userInput != "no") {
+                line();
+                term.print("You have 4 savings vehicles each starting off with $0 invested into them.");
+                term.print("You have a TFSA (Tax Free Savings Account), RRSP (Registered Retirement Savings Plan), Mutual Fund, and a Hedge Fund.");
+                term.print("Each of these vehicles have different rules (some risky with high return, and some safe) for deposits, growth, and withdrawls that will be shown at the end of the rules.");
+                term.print("Every turn, you will be asked a multiple choice question related to the BBI2O course.");
+                term.print("You will then type in the letter of what you think is the correct answer.");
+                term.print("If you choose the best answer, then you will be given $5000 dollars and will be promted to deposit the money into the account of your choice.");
+                term.print("If you are incorrect, then the value of the money in each account will be reduced by 5%.");
+                term.print("At the end of each turn, each account value will grow (or decline) according to their grwoth rules because of the interest or value earned.");
+                term.print("You will also be shown the balance in each account at the end of each turn.");
+                term.print("At the beginning of the game, you will be promted as to how many turns you would like to have.");
+                term.print("When your turns run out, your money will be withdrawn from each account in accordance with the withdrawl rules for each account.");
+                term.print("Your total balance after withdrawing will determine how successful you were. Challenge your friends!");
+                line();
+                term.print("Here are the rules for depositing, growth, and withdrawl for each account type:");
+                term.print("TFSA:");
+                term.print("-Depositing: You get taxed on the deposit. The tax will vary between 5% and 30% randomly.");
+                term.print("-Growth: Earn 5% interest.");
+                term.print("-Withdrawl: No taxes! Receive your full balance.");
+                term.print("RRSP:");
+                term.print("-Depositing: No fee for depositing!");
+                term.print("-Growth: Earn 5% interest.");
+                term.print("-Withdrawl: You will be taxed randomly between 5% and 30%.");
+                term.print("Mutual Fund:");
+                term.print("-Depositing: 5% managment fee.");
+                term.print("-Growth: Earn any where from -5% to +10% on your current balance.");
+                term.print("-Withdrawl: No withrdrawl fee!");
+                term.print("Hedge Fund:");
+                term.print("-Depositing: 10% managment fee for depositing");
+                term.print("-Growth: Earn anywhere from -10% to 40% of your current balance (most of the time)");
+                term.print("-Withdrawl: You will be charged 20% for any profits, but you won't get back 20% of your losses.");
+                line();
+            }
+            term.input("How many turns would you like to have? (between 1 and 32)", function (userInput) {
+                if (userInput < 33 && userInput > 0) {
+                    term.print("Alright, let's begin!");
+                    main(userInput);
+                } else {
+                    term.print("Okay, I see how it is... You will have 32 turns =)");
+                    term.print("Alright, let's begin!");
+                    main(32);
+                }
+            });
+        });
+
+        function main(turns) {
+            dots(3);
+            if (turns > 0) {
+                term.print("Turns left: " + turns);
+                var index = rand(0, questions.length);
+                var currentQuestion = questions[index];
+                currentQuestion.Ask();
+                questions.splice(index, 1);
+                term.input("Which answer is the most accurate?", function (userInput) {
+                    userInput = userInput.toLowerCase();
+                    if (userInput == currentQuestion.answer) {
+                        term.print("Good job you got the question right!");
+                        term.input("Which account would you like to deposit your $5000 into?", function (userInput) {
+                            userInput = userInput.toLowerCase();
+                            if (userInput == "tfsa") {
+                                var tax = rand(5, 30);
+                                var deposited = 5000 * (1 - (tax / 100));
+                                accounts.tfsa += deposited;
+                                term.print("You got taxed " + tax + "% meaning you deposited $" + deposited + ".");
+                            } else if (userInput == "rrsp") {
+                                accounts.rrsp += 5000;
+                                term.print("You have deposited $5000 into your RRSP.");
+                            } else if (userInput == "mutual fund") {
+                                var deposited = 5000 * 0.95;
+                                accounts.mutFund += deposited;
+                                term.print("You paid a 5% management fee meaning you deposited $" + deposited + ".");
+                            } else if (userInput == "hedge fund") {
+                                hedgeCounter++;
+                                var deposited = 5000 * 0.9;
+                                accounts.hedgeFund += deposited;
+                                term.print("You paid a 10% management fee meaning you deposited $" + deposited + ".");
+                            } else {
+                                term.print("Sorry, I didn't understand that. The money will not be deosited anywhere.");
+                            }
+                            term.print("Here are the balances for your accounts currently.");
+                            accounts.showBalances();
+                            goOn(turns);
+                        });
+                    } else {
+                        term.print("That is incorrect. The right answer was " + currentQuestion.answer.toUpperCase() + ".");
+                        term.print("5% has been deducted from each of your account balances.");
+                        accounts.wrongAnswer();
+                        term.print("Here are the balances for your accounts currently.");
+                        accounts.showBalances();
+                        goOn(turns);
+                    }
+                });
+            }
+            else {
+                term.print("You are out of turns! Now you will withdraw the money from each account.");
+                var balance = 0;
+                balance += accounts.tfsa;
+                term.print("No taxes on the TFSA! You withdraw the full $"+parseInt(accounts.tfsa)+".");
+                var tax = rand(5,30);
+                var amount = accounts.rrsp*(1-(tax/100));
+                balance += amount;
+                term.print("You were taxed %"+tax+" on your withdrawl from the RRSP meaning you only took out $" + parseInt(amount)+" of $"+parseInt(accounts.rrsp)+".");
+                balance += accounts.mutFund;
+                if (accounts.mutFund >= 0){
+                    term.print("Yay, no withdrawl fee for the mutual fund! You have received the full $"+parseInt(accounts.mutFund));
+                } else {
+                    term.print("Oops, you have lost $"+parseInt(accounts.mutFund)+" from your mutual fund.");
+                }
+                var profit = accounts.hedgeFund-(5000*hedgeCounter);
+                if (profit > 0){
+                    var amount = accounts.hedgeFund-(0.2*profit);
+                    balance += amount;
+                    term.print("After the profit fee of 20%, you have earned $"+parseInt(amount)+" from your hedge fund!");
+                } else {
+                    term.print("You have lost $"+parseInt(accounts.hedgeFund)+" from your hedge fund.");
+                }
+                line();
+                term.print("Congradulations, you have ended the game with a total of $" +parseInt(balance)+" in your pocket.");
+                term.print("Thanks for playing, refresh the page to restrart.");
+            }
+        }
+
+        function goOn(turns){
+            line();
+            term.print("Now each of your accounts is going to go through the growth stage (or decline)");
+            accounts.tfsa *= 1.05;
+            term.print("You have earned 5% interest on your TFSA.");
+            accounts.rrsp *= 1.05;
+            term.print("You have earned 5% interest on your RRSP.");
+            var mutPerc = rand(-5,10);
+            var mutAm = accounts.mutFund*(1+(mutPerc/100));
+            accounts.mutFund = mutAm;
+            term.print("Your mutual fund has grown by %"+mutPerc);
+            var hedPerc = rand(-10,40);
+            var hedAm = accounts.hedgeFund*(1+(hedPerc/100));
+            if (rand(0,20) == 0){
+                accounts.hedgeFund = 0;
+                term.print("Oh NO! Your hedge fund manager has decided to buy 13,245 cows with your money and has escaped to Ethiopia!");
+                term.print("You have lost all the money in your hedge fund.");
+            } else {
+                accounts.hedgeFund = hedAm;
+                term.print("Your hedge fund has grown by %"+hedPerc);
+            }
+            line();
+            term.print("Here is the final balance of your accounts at the end of this turn.");
+            accounts.showBalances();
+            line();
+            main(turns-1);
+        }
+
+        function Question(question, a, b, c, d, answer) {
+            this.question = question;
+            this.a = a;
+            this.b = b;
+            this.c = c;
+            this.d = d;
+            this.answer = answer;
+        }
+
+        Question.prototype.Ask = function () {
+            term.print(this.question);
+            term.print("A: " + this.a);
+            term.print("B: " + this.b);
+            term.print("C: " + this.c);
+            term.print("D: " + this.d);
+        }
+
+        function Accounts() {
+            this.tfsa = 0;
+            this.rrsp = 0;
+            this.mutFund = 0;
+            this.hedgeFund = 0;
+        }
+
+        Accounts.prototype.showBalances = function () {
+            term.print("TFSA: $" + parseInt(this.tfsa));
+            term.print("RRSP: $" + parseInt(this.rrsp));
+            term.print("Mutual Fund: $" + parseInt(this.mutFund));
+            term.print("Hedge Fund: $" + parseInt(this.hedgeFund));
+        }
+
+        Accounts.prototype.wrongAnswer = function (){
+            this.tfsa *= 0.95;
+            this.rrsp *= 0.95;
+            this.mutFund *= 0.95;
+            this.hedgeFund *= 0.95;
+        }
+
+        function rand(min, max) {
+            return parseInt(Math.random() * (max - min + 1)) + min;
+        }
+
+        function line(){
+            term.print("----------------------------------------------------------------------------------");
+        }
+
+        function dots(n) {
+            if (n > 0) {
+                term.print(".");
+                dots(n - 1);
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
